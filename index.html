@@ -1,1 +1,1064 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Histology Master - Question Bank</title>
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #F0F4F8;
+            --btn-green: #12D11E;
+            --btn-green-dark: #0fb319;
+            --btn-blue: #2196F3;
+            --btn-blue-dark: #1976D2;
+            --correct-bg: #E8F5E9;
+            --correct-border: #2E7D32;
+            --wrong-bg: #FFEBEE;
+            --wrong-border: #C62828;
+            --progress-yellow: #FFC107;
+            --grey-border: #B0BEC5;
+            --grey-light: #ECEFF1;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Almarai', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        #app-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        #home-screen {
+            justify-content: center;
+        }
+
+        .btn-main {
+            width: 90%;
+            max-width: 400px;
+            background-color: var(--btn-green);
+            color: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 25px;
+            border: none;
+            font-size: 22px;
+            /* تم تصغير الخط */
+            font-weight: 800;
+            box-shadow: 0 8px 0 var(--btn-green-dark);
+            cursor: pointer;
+            transition: all 0.1s ease-in-out;
+        }
+
+        .btn-tf {
+            background-color: #FF9800;
+            box-shadow: 0 8px 0 #E65100;
+        }
+
+        .btn-main:active {
+            transform: translateY(8px);
+            box-shadow: 0 0px 0 transparent !important;
+        }
+
+        .quiz-header {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-bg {
+            flex-grow: 1;
+            height: 18px;
+            background: #E0E0E0;
+            border-radius: 10px;
+            margin: 0 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--progress-yellow);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .close-btn {
+            color: #D32F2F;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+
+        #round-info {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #1976D2;
+            font-weight: 800;
+            font-size: 18px;
+            /* تم تصغير الخط */
+        }
+
+        .translate-container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
+        .btn-translate {
+            background-color: var(--btn-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 14px;
+            /* تم تصغير الخط */
+            cursor: pointer;
+            box-shadow: 0 4px 0 var(--btn-blue-dark);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.1s;
+        }
+
+        .btn-translate:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 transparent;
+        }
+
+        .question-box {
+            width: 100%;
+            max-width: 800px;
+            padding: 15px;
+            font-size: 20px;
+            /* تم تصغير الخط */
+            margin-bottom: 20px;
+            color: #000;
+            font-weight: 800;
+            line-height: 1.4;
+            background: white;
+            border: 3px solid var(--grey-border);
+            border-radius: 20px;
+            box-shadow: 0 4px 0 var(--grey-border);
+        }
+
+        /* كلاس تلوين الكلمة الخاطئة في السؤال */
+        /* حالة الكلمة الخاطئة قبل الإجابة (تأخذ لون النص العادي) */
+        .error-word {
+            color: inherit;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        /* حالة الكلمة الخاطئة بعد الإجابة */
+        .question-box.answered .error-word {
+            color: #D32F2F;
+            text-decoration: underline;
+        }
+
+
+        .options-container {
+            width: 100%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 600px) {
+            .options-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .option-btn {
+            border: 3px solid var(--grey-border);
+            border-radius: 15px;
+            padding: 12px 15px;
+            font-size: 16px;
+            /* تم تصغير الخط */
+            font-weight: 700;
+            color: #000;
+            background: white;
+            box-shadow: 0 5px 0 var(--grey-border);
+            cursor: pointer;
+            transition: all 0.1s ease-in-out;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .option-btn.active-click:active {
+            transform: translateY(5px);
+            box-shadow: 0 0px 0 transparent;
+        }
+
+        .option-btn.correct {
+            background: var(--correct-bg) !important;
+            border-color: var(--correct-border) !important;
+            color: var(--correct-border) !important;
+            box-shadow: 0 5px 0 var(--correct-border);
+            pointer-events: none;
+        }
+
+        .option-btn.wrong {
+            background: var(--wrong-bg) !important;
+            border-color: var(--wrong-border) !important;
+            color: var(--wrong-border) !important;
+            box-shadow: 0 5px 0 var(--wrong-border);
+            pointer-events: none;
+        }
+
+        .option-btn.locked {
+            pointer-events: none;
+        }
+
+        .explanation-box {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 15px;
+            padding: 15px;
+            background: #FFFDE7;
+            border: 3px solid #FBC02D;
+            border-radius: 15px;
+            margin-bottom: 100px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .explanation-title {
+            font-size: 18px;
+            /* تم تصغير الخط */
+            font-weight: 800;
+            color: #F57F17;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .explanation-list {
+            margin: 0;
+            padding-right: 25px;
+            padding-left: 25px;
+            font-size: 16px;
+            /* تم تصغير الخط */
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .explanation-list li {
+            margin-bottom: 6px;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            background: white;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 100;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-btn {
+            flex: 1;
+            max-width: 390px;
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            border: none;
+            font-size: 20px;
+            /* تم تصغير الخط */
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .nav-btn.next {
+            background: var(--btn-green);
+            box-shadow: 0 5px 0 var(--btn-green-dark);
+        }
+
+        .nav-btn.prev {
+            background: var(--btn-blue);
+            box-shadow: 0 5px 0 var(--btn-blue-dark);
+        }
+
+        .nav-btn:active:not(:disabled) {
+            transform: translateY(5px);
+            box-shadow: 0 0px 0 transparent;
+        }
+
+        .nav-btn:disabled {
+            background: #B0BEC5;
+            box-shadow: 0 5px 0 #90A4AE;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dialog {
+            width: 90%;
+            max-width: 400px;
+            background: white;
+            border-radius: 30px;
+            padding: 30px 20px;
+            text-align: center;
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes pop {
+            from {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .push-bottom {
+            margin-bottom: 100px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app-container">
+
+        <div id="home-screen" class="screen active">
+            <h1 style="color:#2196F3; font-size: 34px; margin-bottom: 20px; text-align: center;">Histology<br>Master 🔬</h1>
+            <p style="font-size: 16px; font-weight: bold; color: #555; text-align: center; margin-bottom: 30px;">بنك الأسئلة الشامل</p>
+            <button class="btn-main" onclick="initQuiz('mcq')">أسئلة الاختياري (MCQ)</button>
+            <button class="btn-main btn-tf" onclick="initQuiz('tf')">أسئلة الصح والخطأ</button>
+        </div>
+
+        <div id="quiz-screen" class="screen">
+            <div class="quiz-header">
+                <span class="close-btn" onclick="goHome()">✕</span>
+                <div class="progress-bar-bg">
+                    <div id="bar" class="progress-bar-fill"></div>
+                </div>
+                <div id="counter" style="font-weight: 800; min-width: 60px; font-size: 16px; direction: ltr; text-align: center;">0/0</div>
+            </div>
+
+            <div id="round-info">الجولة (1)</div>
+
+            <div class="translate-container">
+                <button class="btn-translate" onclick="toggleTranslation()">
+                    🌐 ترجمة السؤال
+                </button>
+            </div>
+
+            <div class="question-box">
+                <!-- تم تغيير innerText إلى innerHTML في الكود المصدري لدعم التنسيق -->
+                <div id="q-txt" style="direction: ltr; text-align: left;"></div>
+            </div>
+
+            <div class="options-container" id="opt-box"></div>
+
+            <div class="explanation-box" id="exp-box">
+                <div class="explanation-title" id="exp-title">💡 الاحتمالات لتصحيح العبارة:</div>
+                <ul class="explanation-list" id="exp-list"></ul>
+            </div>
+
+            <div class="push-bottom" id="bottom-spacer"></div>
+
+            <div class="footer">
+                <button id="prev-btn" class="nav-btn prev" onclick="goPrev()">السابق</button>
+                <button id="next-btn" class="nav-btn next" onclick="goNext()">التالي</button>
+            </div>
+        </div>
+
+        <div id="win-overlay" class="overlay">
+            <div class="dialog">
+                <h1 style="color: var(--btn-green); font-size: 38px; margin: 0 0 15px 0;">بطل! 🎉</h1>
+                <p style="font-size: 18px; font-weight: 800; color: #333; margin-bottom: 30px;">لقد أتممت الإجابة على جميع الأسئلة بنجاح.</p>
+                <button class="btn-main" style="width: 100%; box-shadow: 0 6px 0 var(--btn-green-dark);" onclick="location.reload()">العودة للرئيسية</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // === بنك أسئلة الاختياري (MCQ) === (بدون تعديلات نصوص)
+        const mcqBank = [{
+                q: "1. Epithelial cells rest:",
+                q_ar: "1. تستند الخلايا الطلائية:",
+                opts: ["On a basement membrane.", "On a cartilage.", "Directly on a connective tissue layer.", "On a bony surface."],
+                opts_ar: ["على الغشاء القاعدي.", "على غضروف.", "مباشرة على طبقة نسيج ضام.", "على سطح عظمي."],
+                correct: 0
+            },
+            {
+                q: "2. The Trachea is lined with:",
+                q_ar: "2. تُبطن القصبة الهوائية بـ:",
+                opts: ["Simple columnar epithelium.", "Pseudo stratified columnar ciliated epithelium with goblet cells.", "Stratified squamous epithelium non keratinized.", "Simple columnar ciliated epithelium."],
+                opts_ar: ["نسيج طلائي عمودي بسيط.", "نسيج طلائي عمودي طبقي كاذب مهدب مع خلايا كأسية.", "نسيج طلائي حرشفي طبقي غير متقرن.", "نسيج طلائي عمودي بسيط مهدب."],
+                correct: 1
+            },
+            {
+                q: "3. The skin is lined with:",
+                q_ar: "3. يُبطن الجلد بـ:",
+                opts: ["Stratified squamous epithelium keratinized.", "Pseudo stratified columnar ciliated epithelium with goblet cells.", "Stratified squamous epithelium non keratinized.", "Simple columnar ciliated epithelium."],
+                opts_ar: ["نسيج طلائي حرشفي طبقي متقرن.", "نسيج طلائي عمودي طبقي كاذب مهدب.", "نسيج طلائي حرشفي طبقي غير متقرن.", "نسيج طلائي عمودي بسيط مهدب."],
+                correct: 0
+            },
+            {
+                q: "4. The glandular epithelium that secretes directly into the blood stream is:",
+                q_ar: "4. النسيج الطلائي الغدّي الذي يفرز مباشرة في مجرى الدم هو:",
+                opts: ["Merocrine.", "Endocrine.", "Holocrine.", "Exocrine."],
+                opts_ar: ["غدد مفرزة (Merocrine).", "غدد صماء (Endocrine).", "غدد منفرزة كاملة (Holocrine).", "غدد خارجية الإفراز (Exocrine)."],
+                correct: 1
+            },
+            {
+                q: "5. The nucleus of eosinophils is:",
+                q_ar: "5. نواة الخلايا الحمضية (Eosinophils) تكون:",
+                opts: ["Bilobed.", "Rounded.", "Multilobed.", "Kidney-shaped or indented."],
+                opts_ar: ["ثنائية الفصوص.", "دائرية.", "متعددة الفصوص.", "على شكل كلية أو مسننة."],
+                correct: 0
+            },
+            {
+                q: "6. The nucleus of monocytes is:",
+                q_ar: "6. نواة الخلايا الوحيدة (Monocytes) تكون:",
+                opts: ["Bilobed.", "Rounded.", "Multilobed.", "Kidney or C-shaped."],
+                opts_ar: ["ثنائية الفصوص.", "دائرية.", "متعددة الفصوص.", "على شكل كلية أو حرف C."],
+                correct: 3
+            },
+            {
+                q: "7. The nucleus of neutrophils is:",
+                q_ar: "7. نواة الخلايا المتعادلة (Neutrophils) تكون:",
+                opts: ["Bilobed.", "Rounded.", "Multilobed.", "Kidney shaped or indented."],
+                opts_ar: ["ثنائية الفصوص.", "دائرية.", "متعددة الفصوص.", "على شكل كلية أو مسننة."],
+                correct: 2
+            },
+            {
+                q: "8. Collagen is synthesized by:",
+                q_ar: "8. يتم تصنيع الكولاجين بواسطة:",
+                opts: ["Macrophages.", "Fibroblasts.", "Plasma cells.", "Monocytes."],
+                opts_ar: ["الخلايا البلعمية.", "الخلايا الليفية اليافعة (Fibroblasts).", "الخلايا البلازمية.", "الخلايا الوحيدة."],
+                correct: 1
+            },
+            {
+                q: "9. Reticular fibers are very thin collagen fibers type:",
+                q_ar: "9. الألياف الشبكية هي ألياف كولاجين رفيعة جداً من النوع:",
+                opts: ["Type I.", "Type II.", "Type III.", "Type IV."],
+                opts_ar: ["النوع الأول.", "النوع الثاني.", "النوع الثالث.", "النوع الرابع."],
+                correct: 2
+            },
+            {
+                q: "10. Elastic cartilage is characterized by:",
+                q_ar: "10. يتميز الغضروف المرن بـ:",
+                opts: ["Is the most common type of cartilage.", "No perichondrium.", "Presents in intervertebral discs.", "Presence of elastic fibers."],
+                opts_ar: ["أنه النوع الأكثر شيوعاً من الغضاريف.", "لا يحتوي على سمحاق الغضروف.", "يوجد في الأقراص بين الفقرات.", "وجود الألياف المرنة."],
+                correct: 3
+            },
+            {
+                q: "11. The largest blood leukocytes:",
+                q_ar: "11. أكبر خلايا الدم البيضاء هي:",
+                opts: ["Neutrophils.", "Eosinophils.", "Monocytes.", "Large lymphocytes."],
+                opts_ar: ["الخلايا المتعادلة.", "الخلايا الحمضية.", "الخلايا الوحيدة (Monocytes).", "الخلايا الليمفاوية الكبيرة."],
+                correct: 2
+            },
+            {
+                q: "12. Regarding the blood supply to cartilage:",
+                q_ar: "12. فيما يخص الإمداد الدموي للغضروف:",
+                opts: ["Cartilage has minimal circulation.", "Cartilage has a double circulation.", "Cartilage is highly vascular.", "Cartilage is avascular."],
+                opts_ar: ["الغضروف لديه دورة دموية بسيطة.", "الغضروف لديه دورة دموية مزدوجة.", "الغضروف غني بالأوعية الدموية.", "الغضروف خالٍ من الأوعية الدموية (Avascular)."],
+                correct: 3
+            },
+            {
+                q: "13. What is the connective tissue covering which surrounds cartilage?",
+                q_ar: "13. ما هو النسيج الضام الذي يغلف الغضروف؟",
+                opts: ["Perimysium.", "Periosteum.", "Perichondrium.", "Perineurium."],
+                opts_ar: ["غلاف الحزمة العضلية.", "السمحاق العظمي.", "سمحاق الغضروف (Perichondrium).", "غلاف الحزمة العصبية."],
+                correct: 2
+            },
+            {
+                q: "17. What is the cylindrical structure in compact bone?",
+                q_ar: "17. ما هو التركيب الأسطواني في العظم الكثيف؟",
+                opts: ["Osteoclast.", "Osteon.", "Osteocyte.", "Osteoid."],
+                opts_ar: ["خلية ناقضة للعظم.", "العظمون (Osteon / نظام هافرس).", "خلية عظمية.", "نسيج عظمي غير متكلس."],
+                correct: 1
+            },
+            {
+                q: "18. Which type of cartilage is characterized by the presence of thick bundles of collagen fibers?",
+                q_ar: "18. أي نوع من الغضاريف يتميز بوجود حزم سميكة من ألياف الكولاجين؟",
+                opts: ["Hyaline cartilage.", "Elastic cartilage.", "Fibrocartilage.", "All of the above."],
+                opts_ar: ["الغضروف الزجاجي.", "الغضروف المرن.", "الغضروف الليفي (Fibrocartilage).", "جميع ما سبق."],
+                correct: 2
+            },
+            {
+                q: "20. Bipolar neurons:",
+                q_ar: "20. الخلايا العصبية ثنائية القطب:",
+                opts: ["Have one axon and one dendrite.", "Found in cerebral cortex.", "Have many dendrites & one axon.", "Have star - shaped cell bodies."],
+                opts_ar: ["تمتلك محوراً عصبياً واحداً وتغصناً واحداً.", "توجد في القشرة المخية.", "تمتلك تغصنات عديدة ومحوراً واحداً.", "أجسام خلاياها على شكل نجمة."],
+                correct: 0
+            },
+            {
+                q: "21. Nerve cells that have one processes are called:",
+                q_ar: "21. الخلايا العصبية التي تمتلك امتداداً واحداً تسمى:",
+                opts: ["Bipolar", "Unipolar", "Nonpolar", "Multipolar"],
+                opts_ar: ["ثنائية القطب", "أحادية القطب (Unipolar)", "عديمة القطب", "متعددة الأقطاب"],
+                correct: 1
+            },
+            {
+                q: "22. Lymph nodes have:",
+                q_ar: "22. العقد الليمفاوية تحتوي على:",
+                opts: ["Cortical zone.", "Medullary zone.", "Thymic dependent zone.", "All of the above."],
+                opts_ar: ["منطقة القشرة.", "منطقة النخاع.", "منطقة معتمدة على التوتة (Thymus).", "جميع ما سبق."],
+                correct: 3
+            },
+            {
+                q: "23. The following blood vessel contains longitudinal bundles of smooth muscle fibers in the tunica adventitia:",
+                q_ar: "23. الوعاء الدموي التالي يحتوي على حزم طولية من العضلات الملساء في الغلالة البرانية:",
+                opts: ["Inferior vena cava.", "Coronary arteries.", "Medium-sized artery.", "Basilar artery."],
+                opts_ar: ["الوريد الأجوف السفلي.", "الشرايين التاجية.", "شريان متوسط الحجم.", "الشريان القاعدي."],
+                correct: 0
+            },
+            {
+                q: "24. The ___ is the outermost layer of the skin:",
+                q_ar: "24. ___ هي الطبقة الخارجية للجلد:",
+                opts: ["Epidermis", "Hypodermis", "Dermis", "Stroma"],
+                opts_ar: ["البشرة (Epidermis)", "النسيج تحت الجلد", "الأدمة", "السدى"],
+                correct: 0
+            },
+            {
+                q: "25. The type of cartilage in the trachea is:",
+                q_ar: "25. نوع الغضروف في القصبة الهوائية هو:",
+                opts: ["Elastic fibrocartilage.", "White fibrocartilage.", "Hyaline cartilage.", "None of the above."],
+                opts_ar: ["غضروف ليفي مرن.", "غضروف ليفي أبيض.", "الغضروف الزجاجي (Hyaline).", "لا شيء مما سبق."],
+                correct: 2
+            },
+            {
+                q: "26. Parietal cells release:",
+                q_ar: "26. تفرز الخلايا الجدارية (Parietal cells):",
+                opts: ["Mucous.", "Antibodies.", "HCL.", "Antibacterial agent, Lysozyme."],
+                opts_ar: ["المخاط.", "الأجسام المضادة.", "حمض الهيدروكلوريك (HCL).", "عامل مضاد للبكتيريا (Lysozyme)."],
+                correct: 2
+            },
+            {
+                q: "27. Concerning pars nervosa of pituitary gland:",
+                q_ar: "27. بخصوص الجزء العصبي (Pars nervosa) من الغدة النخامية:",
+                opts: ["They are larger than chromophils.", "Gonadotrophs.", "Have granules.", "Have Herring bodies."],
+                opts_ar: ["هي أكبر من الخلايا الملونة.", "خلايا موجهة الغدد التناسلية.", "تحتوي على حبيبات.", "تحتوي على أجسام هيرنج (Herring bodies)."],
+                correct: 3
+            },
+            {
+                q: "28. The structural and functional unit of the kidney:",
+                q_ar: "28. الوحدة البنائية والوظيفية للكلية هي:",
+                opts: ["Uriniferous tubules", "Kidney lobes", "Kidney lobules", "Renal pelvis"],
+                opts_ar: ["الأنابيب البولية (Uriniferous tubules)", "فصوص الكلى", "فصيصات الكلى", "حوض الكلية"],
+                correct: 0
+            },
+            {
+                q: "29. The visceral layer of Bowman's capsule is formed of:",
+                q_ar: "29. الطبقة الحشوية لمحفظة بومان تتكون من:",
+                opts: ["Simple squamous cells", "Podocytes", "Simple cubical cells", "Mesangial cell"],
+                opts_ar: ["خلايا حرشفية بسيطة", "الخلايا الرجلاء (Podocytes)", "خلايا مكعبة بسيطة", "خلايا مسراقية"],
+                correct: 1
+            },
+            {
+                q: "30. Regarding epithelium lining seminiferous tubules ONE is WRONG:",
+                q_ar: "30. بخصوص النسيج الطلائي المبطن للأنابيب المنوية، واحدة فقط خاطئة:",
+                opts: ["Germinal epithelium.", "Formed of spermatogenic, and Sertoli cells.", "Rests on basal lamina.", "Contain interstitial cells of leydig."],
+                opts_ar: ["ظهارة جرثومية.", "تتكون من خلايا مولدة للحيوانات المنوية وخلايا سيرتولي.", "تستند على الصفيحة القاعدية.", "تحتوي على خلايا ليديغ البينية."],
+                correct: 3
+            },
+            {
+                q: "31. Mature (Graffian) Follicles have one cavity called:",
+                q_ar: "31. الجريبات الناضجة (جراف) تحتوي على تجويف واحد يسمى:",
+                opts: ["Theca lutein", "Follicular antrum", "Follicular fluid", "Follicular cells"],
+                opts_ar: ["القراب اللوتيني", "الغار الجريبي (Follicular antrum)", "السائل الجريبي", "الخلايا الجريبية"],
+                correct: 1
+            },
+            {
+                q: "32. Which type of ovarian follicle consists of a primary oocyte surrounded by a granulosa cells with several intercellular spaces?",
+                q_ar: "32. أي نوع من جريبات المبيض يتكون من خلية بيضية أولية محاطة بخلايا محببة مع عدة مسافات بين خلوية؟",
+                opts: ["Primordial follicle", "Primary follicle", "Secondary follicle", "Mature follicle"],
+                opts_ar: ["الجريب البدائي", "الجريب الأولي", "الجريب الثانوي (Secondary follicle)", "الجريب الناضج"],
+                correct: 2
+            }
+        ];
+
+        // === بنك أسئلة الصح والخطأ مع تلوين الخطأ بالـ class وتمييز الصح بالـ <b> ===
+        const tfBank = [{
+                q: "1. Macrophage main function is phagocytic function.",
+                q_ar: "1. الوظيفة الرئيسية للخلية البلعمية هي البلعمة.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 0
+            },
+            {
+                q: "2. <span class='error-word'>Fat cell</span> is one of the <span class='error-word'>free cells</span> of the C.T.",
+                q_ar: "2. <span class='error-word'>الخلية الدهنية</span> هي إحدى <span class='error-word'>الخلايا الحرة</span> في النسيج الضام.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>Fat cell</b> is one of the <b>FIXED cells</b> of the C.T.", "Possibility 2: <b>Free cells</b> include <b>macrophages, mast cells</b>, etc."],
+                exp_ar: ["الاحتمال الأول: الخلية الدهنية تعتبر من <b>الخلايا الثابتة (Fixed cells)</b>.", "الاحتمال الثاني: الخلايا الحرة تشمل <b>الخلايا البلعمية والبدينة</b>."]
+            },
+            {
+                q: "3. <span class='error-word'>Mast cell</span> has a <span class='error-word'>signet ring</span> appearance.",
+                q_ar: "3. <span class='error-word'>الخلية البدينة (Mast cell)</span> لها مظهر يشبه <span class='error-word'>الخاتم (Signet ring)</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>FAT CELL</b> is the one that has a signet ring appearance.", "Possibility 2: Mast cell has a cytoplasm packed with <b>large basophilic granules</b>."],
+                exp_ar: ["الاحتمال الأول: الخلية التي لها مظهر الخاتم هي <b>الخلية الدهنية (Fat cell)</b>.", "الاحتمال الثاني: الخلية البدينة تتميز بسيتوبلازم مليء <b>بالحبيبات الكبيرة</b>."]
+            },
+            {
+                q: "4. <span class='error-word'>Endocrine</span> gland secretes its product through a <span class='error-word'>duct</span> or tube.",
+                q_ar: "4. <span class='error-word'>الغدة الصماء</span> تفرز منتجاتها عبر <span class='error-word'>قناة أو أنبوب</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>EXOCRINE glands</b> secrete products through ducts.", "Possibility 2: Endocrine glands secrete <b>directly into the bloodstream</b> (ductless)."],
+                exp_ar: ["الاحتمال الأول: <b>الغدد الخارجية (Exocrine)</b> هي التي تفرز عبر قنوات.", "الاحتمال الثاني: الغدد الصماء تفرز هرموناتها <b>مباشرة في الدم</b> بدون قنوات."]
+            },
+            {
+                q: "5. Plasma cells are responsible for the Secretion of antibodies.",
+                q_ar: "5. الخلايا البلازمية مسؤولة عن إفراز الأجسام المضادة.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 0
+            },
+            {
+                q: "6. <span class='error-word'>Elastic fibers</span> are present in <span class='error-word'>fibrocartilage</span>.",
+                q_ar: "6. <span class='error-word'>الألياف المرنة</span> موجودة في <span class='error-word'>الغضروف الليفي</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>COLLAGEN type I</b> fibers are present in fibrocartilage.", "Possibility 2: Elastic fibers are present in <b>ELASTIC cartilage</b>."],
+                exp_ar: ["الاحتمال الأول: الغضروف الليفي يحتوي على <b>ألياف الكولاجين السميكة</b>.", "الاحتمال الثاني: الألياف المرنة توجد في <b>الغضروف المرن (Elastic cartilage)</b>."]
+            },
+            {
+                q: "7. <span class='error-word'>Compact bone</span> is composed of <span class='error-word'>irregular trabeculae</span> of bone separated by bone marrow spaces.",
+                q_ar: "7. <span class='error-word'>العظم الكثيف</span> يتكون من <span class='error-word'>ترابيق عظمية غير منتظمة</span> مفصولة بمسافات نخاع العظم.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>SPONGY (cancellous) bone</b> is composed of irregular trabeculae.", "Possibility 2: Compact bone is composed of closely packed <b>Haversian systems</b>."],
+                exp_ar: ["الاحتمال الأول: <b>العظم الإسفنجي</b> هو الذي يتكون من ترابيق غير منتظمة.", "الاحتمال الثاني: العظم الكثيف يتكون من <b>أنظمة هافرس (Haversian systems)</b> المتراصة."]
+            },
+            {
+                q: "8. <span class='error-word'>Osteoblasts</span> are responsible for <span class='error-word'>resorption</span> of bone.",
+                q_ar: "8. <span class='error-word'>الخلايا البانية للعظم (Osteoblasts)</span> مسؤولة عن <span class='error-word'>ارتشاف (تآكل)</span> العظم.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>OSTEOCLASTS</b> are responsible for bone resorption.", "Possibility 2: Osteoblasts are responsible for bone <b>FORMATION (synthesis)</b>."],
+                exp_ar: ["الاحتمال الأول: <b>الخلايا الناقضة (Osteoclasts)</b> هي المسؤولة عن تآكل العظم.", "الاحتمال الثاني: الخلايا البانية (Osteoblasts) مسؤولة عن <b>بناء وتكوين العظم</b>."]
+            },
+            {
+                q: "9. <span class='error-word'>Haversian system</span> is present in <span class='error-word'>cancellous bone</span>.",
+                q_ar: "9. <span class='error-word'>نظام هافرس</span> موجود في <span class='error-word'>العظم الإسفنجي (Cancellous bone)</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: Haversian system is present in <b>COMPACT bone</b>.", "Possibility 2: Cancellous bone lacks <b>true Haversian systems</b>."],
+                exp_ar: ["الاحتمال الأول: نظام هافرس يوجد أساساً في <b>العظم الكثيف (Compact bone)</b>.", "الاحتمال الثاني: العظم الإسفنجي يفتقر إلى <b>أنظمة هافرس الحقيقية</b>."]
+            },
+            {
+                q: "10. The segment between two successive <span class='error-word'>z-lines</span> is called <span class='error-word'>Centromere</span>.",
+                q_ar: "10. القطعة بين خطي Z متتاليين تسمى <span class='error-word'>السنترومير (Centromere)</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: The segment between two successive Z-lines is called <b>SARCOMERE</b>.", "Possibility 2: Centromere is a region connecting <b>sister chromatids in a chromosome</b>."],
+                exp_ar: ["الاحتمال الأول: القطعة بين خطي Z متتاليين تسمى <b>الساركومير (Sarcomere)</b>.", "الاحتمال الثاني: السنترومير هو جزء يربط <b>الكروماتيدات في الكروموسوم</b>."]
+            },
+            {
+                q: "11. <span class='error-word'>Intercalated disc</span> is a characteristic feature of <span class='error-word'>skeletal muscle</span>.",
+                q_ar: "11. <span class='error-word'>القرص البيني</span> هو سمة مميزة <span class='error-word'>للعضلات الهيكلية</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: Intercalated disc is a characteristic of <b>CARDIAC muscle</b>.", "Possibility 2: Skeletal muscle features multinucleated unbranched fibers <b>lacking intercalated discs</b>."],
+                exp_ar: ["الاحتمال الأول: الأقراص البينية تميز <b>العضلات القلبية (Cardiac muscle)</b>.", "الاحتمال الثاني: العضلات الهيكلية <b>لا تحتوي على أقراص بينية</b> على الإطلاق."]
+            },
+            {
+                q: "12. <span class='error-word'>Electrical synapse</span> transport impulses by a <span class='error-word'>chemical transmitter</span>.",
+                q_ar: "12. <span class='error-word'>التشابك العصبي الكهربائي</span> ينقل النبضات بواسطة <span class='error-word'>ناقل كيميائي</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>CHEMICAL synapse</b> transport impulses by chemical transmitters.", "Possibility 2: Electrical synapses transmit impulses via <b>Gap Junctions (ions)</b>."],
+                exp_ar: ["الاحتمال الأول: <b>التشابك الكيميائي</b> هو الذي ينقل النبضات عبر نواقل كيميائية.", "الاحتمال الثاني: التشابك الكهربائي ينقل النبضات مباشرة عبر <b>الوصلات الفجوية (Gap Junctions)</b>."]
+            },
+            {
+                q: "13. <span class='error-word'>Primary lymphatic nodules</span> is formed of a central pale area called the <span class='error-word'>germinal center</span>.",
+                q_ar: "13. <span class='error-word'>العقيدات الليمفاوية الأولية</span> تتكون من منطقة مركزية شاحبة تسمى <span class='error-word'>المركز المنتش</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>SECONDARY lymphatic nodules</b> have a central pale germinal center.", "Possibility 2: Primary lymphatic nodules are uniformly dense and dark <b>(no germinal center)</b>."],
+                exp_ar: ["الاحتمال الأول: <b>العقيدات الثانوية</b> هي التي تحتوي على مركز منتبج (Germinal center).", "الاحتمال الثاني: العقيدات الأولية تكون داكنة وموحدة اللون <b>بدون مركز شاحب</b>."]
+            },
+            {
+                q: "14. <span class='error-word'>Mast cell</span> are the <span class='error-word'>most common</span> cell type of connective tissue.",
+                q_ar: "14. <span class='error-word'>الخلية البدينة</span> هي <span class='error-word'>أكثر أنواع خلايا</span> النسيج الضام شيوعاً.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>FIBROBLASTS</b> are the most common cell type of connective tissue.", "Possibility 2: Mast cells are widely distributed but <b>NOT the most common</b>."],
+                exp_ar: ["الاحتمال الأول: <b>الخلايا الليفية (Fibroblasts)</b> هي الأكثر شيوعاً في النسيج الضام.", "الاحتمال الثاني: الخلايا البدينة موزعة بكثرة ولكنها <b>ليست الأكثر شيوعاً</b>."]
+            },
+            {
+                q: "15. <span class='error-word'>Zymogen cells</span> secret an antibacterial agent, <span class='error-word'>Lysozyme</span>.",
+                q_ar: "15. <span class='error-word'>الخلايا المفرزة للإنزيمات (Zymogen)</span> تفرز عاملاً مضاداً للبكتيريا يسمى <span class='error-word'>ليزوزيم</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>PANETH cells</b> secrete the antibacterial agent, Lysozyme.", "Possibility 2: Zymogen (chief) cells secrete <b>Pepsinogen</b>."],
+                exp_ar: ["الاحتمال الأول: <b>خلايا بانيث (Paneth cells)</b> هي التي تفرز الليزوزيم.", "الاحتمال الثاني: الخلايا المفرزة للإنزيمات (Zymogen) تفرز <b>الببسينوجين</b>."]
+            },
+            {
+                q: "16. <span class='error-word'>Lactotrophs</span> in the pars distalis synthesized and secreted <span class='error-word'>growth hormone</span>.",
+                q_ar: "16. <span class='error-word'>الخلايا المفرزة للبرولاكتين (Lactotrophs)</span> تصنع وتفرز <span class='error-word'>هرمون النمو</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>SOMATOTROPHS</b> synthesize and secrete growth hormone.", "Possibility 2: Lactotrophs synthesize and secrete <b>PROLACTIN</b>."],
+                exp_ar: ["الاحتمال الأول: <b>خلايا سوماتوتروف (Somatotrophs)</b> هي التي تفرز هرمون النمو.", "الاحتمال الثاني: خلايا لاكتوتروف (Lactotrophs) تفرز <b>هرمون البرولاكتين</b>."]
+            },
+            {
+                q: "17. Filteration barrier is present between the blood in glomerular capillaries and the filtrate in the Bowman capsular spaces.",
+                q_ar: "17. حاجز الترشيح موجود بين الدم في الشعيرات الكبيبية والرشاحة في فراغات محفظة بومان.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 0
+            },
+            {
+                q: "18. <span class='error-word'>Primary spermatocytes</span> are cells forming the <span class='error-word'>blood-testis barrier</span>.",
+                q_ar: "18. <span class='error-word'>الخلايا المنوية الأولية</span> هي التي تشكل <span class='error-word'>حاجز الدم-الخصية</span>.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: <b>SERTOLI cells</b> form the blood-testis barrier.", "Possibility 2: Primary spermatocytes are germ cells undergoing <b>Meiosis I</b>."],
+                exp_ar: ["الاحتمال الأول: <b>خلايا سيرتولي (Sertoli cells)</b> هي التي تشكل حاجز الدم-الخصية.", "الاحتمال الثاني: الخلايا المنوية الأولية هي خلايا جرثومية تمر <b>بالانقسام الميوزي</b>."]
+            },
+            {
+                q: "19. <span class='error-word'>Merkel cells</span> present in <span class='error-word'>prickle cell layer</span> in epidermis of the skin.",
+                q_ar: "19. <span class='error-word'>خلايا ميركل</span> موجودة في <span class='error-word'>الطبقة الشائكة (Prickle cell layer)</span> في البشرة.",
+                opts: ["True", "False"],
+                opts_ar: ["صح", "خطأ"],
+                correct: 1,
+                exp_en: ["Possibility 1: Merkel cells are present in the <b>BASAL layer (Stratum Basale)</b>.", "Possibility 2: The prickle cell layer (Stratum Spinosum) contains <b>Keratinocytes & Langerhans cells</b>."],
+                exp_ar: ["الاحتمال الأول: خلايا ميركل توجد في <b>الطبقة القاعدية (Stratum basale)</b>.", "الاحتمال الثاني: الطبقة الشائكة تحتوي على <b>الخلايا الكيراتينية وخلايا لانغرهانز</b>."]
+            }
+        ];
+
+        let currentRoundQuestions = [];
+        let currentIndex = 0;
+        let currentRound = 1;
+        let isTranslated = false;
+        let activeMode = 'mcq';
+
+        function goHome() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('home-screen').classList.add('active');
+        }
+
+        function initQuiz(mode) {
+            activeMode = mode;
+            let sourceBank = mode === 'mcq' ? mcqBank : tfBank;
+
+            // خلط الأسئلة
+            let fullBank = [...sourceBank].sort(() => Math.random() - 0.5);
+            prepareRound(fullBank);
+            currentRound = 1;
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('quiz-screen').classList.add('active');
+
+            loadQuestion();
+        }
+
+        function prepareRound(questionsArray) {
+            currentRoundQuestions = questionsArray.map(q => {
+                let newQ = JSON.parse(JSON.stringify(q));
+
+                if (activeMode === 'tf') {
+                    newQ.shuffledIndices = [0, 1];
+                } else {
+                    let indices = Array.from(Array(q.opts.length).keys());
+                    newQ.shuffledIndices = indices.sort(() => Math.random() - 0.5);
+                }
+
+                newQ.userAnswerIndex = null;
+                return newQ;
+            });
+            currentIndex = 0;
+        }
+
+        function updateProgressUI() {
+            let total = currentRoundQuestions.length;
+            let currentNum = currentIndex + 1;
+
+            document.getElementById('counter').innerText = `${currentNum} / ${total}`;
+            document.getElementById('bar').style.width = `${(currentNum / total) * 100}%`;
+            document.getElementById('round-info').innerText = `الجولة (${currentRound})`;
+        }
+
+        function toggleTranslation() {
+            isTranslated = !isTranslated;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            updateProgressUI();
+            const qData = currentRoundQuestions[currentIndex];
+
+            // إعداد النص
+            const qTxtElement = document.getElementById('q-txt');
+            qTxtElement.innerHTML = isTranslated ? qData.q_ar : qData.q;
+            qTxtElement.style.direction = isTranslated ? 'rtl' : 'ltr';
+            qTxtElement.style.textAlign = isTranslated ? 'right' : 'left';
+
+            // إخفاء صندوق التفسير عند تحميل سؤال جديد
+            document.getElementById('exp-box').style.display = 'none';
+
+            // التحكم في ظهور الكلمات الملونة بناءً على حالة الإجابة
+            const questionBox = document.querySelector('.question-box');
+            if (qData.userAnswerIndex !== null) {
+                questionBox.classList.add('answered'); // إظهار التلوين إذا كان مجاباً مسبقاً (عند الرجوع للسابق)
+            } else {
+                questionBox.classList.remove('answered'); // إخفاء التلوين في السؤال الجديد
+            }
+
+            const box = document.getElementById('opt-box');
+            box.innerHTML = '';
+
+            if (activeMode === 'tf') {
+                box.style.gridTemplateColumns = '1fr 1fr';
+            } else {
+                box.style.gridTemplateColumns = window.innerWidth >= 600 ? '1fr 1fr' : '1fr';
+            }
+
+            let validIndices = qData.shuffledIndices;
+
+            validIndices.forEach(originalIdx => {
+                const btn = document.createElement('div');
+                btn.className = 'option-btn';
+                if (activeMode === 'tf') btn.style.justifyContent = 'center';
+
+                btn.innerText = isTranslated ? qData.opts_ar[originalIdx] : qData.opts[originalIdx];
+                btn.style.direction = isTranslated ? 'rtl' : 'ltr';
+
+                if (qData.userAnswerIndex === null) {
+                    btn.classList.add('active-click');
+                    btn.onclick = () => selectOption(btn, originalIdx, qData);
+                } else {
+                    btn.classList.add('locked');
+                    if (originalIdx === qData.correct) {
+                        btn.classList.add('correct');
+                    } else if (originalIdx === qData.userAnswerIndex) {
+                        btn.classList.add('wrong');
+                    }
+                }
+
+                box.appendChild(btn);
+            });
+
+            document.getElementById('prev-btn').disabled = (currentIndex === 0);
+            const nextBtn = document.getElementById('next-btn');
+
+            if (qData.userAnswerIndex === null) {
+                nextBtn.disabled = true;
+            } else {
+                nextBtn.disabled = false;
+                showExplanationIfAvailable(qData);
+            }
+
+            if (currentIndex === currentRoundQuestions.length - 1 && qData.userAnswerIndex !== null) {
+                nextBtn.innerText = "إنهاء الجولة";
+            } else {
+                nextBtn.innerText = "التالي";
+            }
+        }
+
+        function selectOption(selectedBtn, originalIdx, qData) {
+            qData.userAnswerIndex = originalIdx;
+
+            // تفعيل التلوين للكلمات الخاطئة بمجرد النقر على الإجابة
+            document.querySelector('.question-box').classList.add('answered');
+
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(btn => {
+                btn.classList.remove('active-click');
+                btn.classList.add('locked');
+                btn.onclick = null;
+            });
+
+            let idxCounter = 0;
+            let validIndices = qData.shuffledIndices;
+
+            validIndices.forEach(idx => {
+                if (idx === qData.correct) {
+                    allBtns[idxCounter].classList.add('correct');
+                } else if (idx === qData.userAnswerIndex) {
+                    allBtns[idxCounter].classList.add('wrong');
+                }
+                idxCounter++;
+            });
+
+            showExplanationIfAvailable(qData);
+
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.disabled = false;
+            if (currentIndex === currentRoundQuestions.length - 1) {
+                nextBtn.innerText = "إنهاء الجولة";
+            }
+        }
+
+
+        function showExplanationIfAvailable(qData) {
+            const expBox = document.getElementById('exp-box');
+            if (activeMode === 'tf' && qData.correct === 1 && (qData.exp_ar || qData.exp_en)) {
+                expBox.style.display = 'block';
+                const ul = document.getElementById('exp-list');
+                ul.innerHTML = '';
+
+                const explanations = isTranslated ? qData.exp_ar : qData.exp_en;
+                explanations.forEach(exp => {
+                    const li = document.createElement('li');
+                    // استخدام innerHTML لكي يظهر الخط العريض (bold) بشكل صحيح
+                    li.innerHTML = exp;
+                    ul.appendChild(li);
+                });
+
+                expBox.style.direction = isTranslated ? 'rtl' : 'ltr';
+                expBox.style.textAlign = isTranslated ? 'right' : 'left';
+                document.getElementById('exp-title').innerText = isTranslated ? '💡 الاحتمالات لتصحيح العبارة:' : '💡 Correction Possibilities:';
+
+                document.getElementById('bottom-spacer').classList.remove('push-bottom');
+            } else {
+                expBox.style.display = 'none';
+                document.getElementById('bottom-spacer').classList.add('push-bottom');
+            }
+        }
+
+        function goPrev() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                loadQuestion();
+            }
+        }
+
+        function goNext() {
+            if (currentIndex < currentRoundQuestions.length - 1) {
+                currentIndex++;
+                loadQuestion();
+            } else {
+                evaluateRoundEnd();
+            }
+        }
+
+        function evaluateRoundEnd() {
+            let failedQuestions = currentRoundQuestions.filter(q => q.userAnswerIndex !== q.correct);
+
+            if (failedQuestions.length > 0) {
+                currentRound++;
+                let cleanFailed = failedQuestions.map(q => {
+                    return {
+                        q: q.q,
+                        q_ar: q.q_ar,
+                        opts: q.opts,
+                        opts_ar: q.opts_ar,
+                        correct: q.correct,
+                        exp_en: q.exp_en,
+                        exp_ar: q.exp_ar
+                    };
+                });
+
+                prepareRound(cleanFailed);
+                loadQuestion();
+            } else {
+                document.getElementById('win-overlay').style.display = 'flex';
+                confetti({
+                    particleCount: 300,
+                    spread: 100,
+                    origin: {
+                        y: 0.6
+                    },
+                    colors: ['#12D11E', '#2196F3', '#FFC107', '#E91E63']
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>
